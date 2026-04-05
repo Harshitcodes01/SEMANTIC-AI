@@ -1,0 +1,159 @@
+from langgraph.graph import StateGraph
+from typing import TypedDict
+
+from llm_parser import parse_prompt
+from vector_search import search_traits
+from research import fetch_research_insights
+from spec_generator import generate_final_spec
+from validator import validate_spec
+
+
+# ---------------------------
+# STATE DEFINITION
+# ---------------------------
+class State(TypedDict):
+    input: str
+    parsed: dict
+    traits: list
+    insights: list
+    final: dict
+    valid: bool
+    retries: int   
+
+
+# ---------------------------
+# RETRY LOGIC (IMPORTANT)
+# ---------------------------
+def parse_with_retry(user_input, max_attempts=3):
+    for attempt in range(max_attempts):
+        result = parse_prompt(user_input)
+
+        if "error" not in result:
+            return result
+
+        print(f"Retry parsing... attempt {attempt + 1}")
+
+    return {"error": "failed_after_retries"}
+
+
+# ---------------------------
+# NODES
+# ---------------------------
+def parse_node(state: State):
+    print("Step 1: Parsing prompt...")
+
+    state["parsed"] = parse_with_retry(state["input"])
+    return state
+
+
+def search_node(state: State):
+    print("Step 2: Searching traits...")
+
+    state["traits"] = search_traits(state["input"])
+    return state
+
+
+def research_node(state: State):
+    print("Step 3: Fetching research...")
+
+    state["insights"] = fetch_research_insights(state["input"])
+    return state
+
+
+def generate_node(state: State):
+    print("Step 4: Generating final spec...")
+
+    # Handle case where parsing failed
+    if "error" in state["parsed"]:
+        state["final"] = {
+            "crop": "unknown",
+            "location": "unknown",
+            "temperature": 0,
+            "stress": [],
+            "traits": [],
+            "scientific_basis": [],
+            "confidence": 0.0
+        }
+        return state
+
+    state["final"] = generate_final_spec(
+        state["parsed"],
+        state["traits"],
+        state["insights"]
+    )
+    return state
+
+
+def validate_node(state: State):
+    print("Step 5: Validating output...")
+
+    result, ok = validate_spec(state["final"])
+
+    state["valid"] = ok
+
+    if not ok:
+        state["retries"] += 1
+
+        print(f"Validation failed. Retry count: {state['retries']}")
+
+        # ✅ STOP after 3 retries
+        if state["retries"] >= 3:
+            print("Max retries reached. Using fallback.")
+
+            state["final"] = {
+                "crop": "unknown",
+                "location": "unknown",
+                "temperature": 0,
+                "stress": [],
+                "traits": [],
+                "scientific_basis": [],
+                "confidence": 0.0
+            }
+
+            state["valid"] = True  # force exit
+
+    return state
+
+
+# ---------------------------
+# ROUTER (RETRY CONTROL)
+# ---------------------------
+def retry_router(state: State):
+    if not state["valid"]:
+        return "generate"   # retry generation
+    return "end"
+
+
+# ---------------------------
+# BUILD GRAPH
+# ---------------------------
+def build_graph():
+    graph = StateGraph(State)
+
+    # Nodes
+    graph.add_node("parse", parse_node)
+    graph.add_node("search", search_node)
+    graph.add_node("research", research_node)
+    graph.add_node("generate", generate_node)
+    graph.add_node("validate", validate_node)
+
+    # Entry
+    graph.set_entry_point("parse")
+
+    # Flow
+    graph.add_edge("parse", "search")
+    graph.add_edge("search", "research")
+    graph.add_edge("research", "generate")
+    graph.add_edge("generate", "validate")
+
+    # Retry loop
+    graph.add_conditional_edges(
+        "validate",
+        retry_router,
+        {
+            "generate": "generate",
+            "end": "__end__"
+        }
+    )
+
+    return graph.compile()
