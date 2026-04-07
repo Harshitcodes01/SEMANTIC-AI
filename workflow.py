@@ -47,9 +47,13 @@ def parse_node(state: State):
 
 
 def search_node(state: State):
-    print("Step 2: Searching traits...")
+    print("Step 2: Vector searching traits...")
 
-    state["traits"] = search_traits(state["input"])
+    traits = search_traits(state["input"])
+
+    # Take top 3 traits only
+    state["traits"] = traits[:3]
+
     return state
 
 

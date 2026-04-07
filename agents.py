@@ -1,5 +1,6 @@
 import subprocess
 import json
+from scoring import compute_confidence
 
 # ----------------------------------------
 # OLLAMA PATH (IMPORTANT)
@@ -69,18 +70,20 @@ Input:
 # ----------------------------------------
 # AGENT 2: SCIENTIST
 # ----------------------------------------
-def scientist_agent(plan):
+def scientist_agent(plan, traits):
     prompt = f"""
-You are a domain scientist.
+You are an agricultural scientist.
 
-Given this plan:
+Input plan:
 {plan}
 
-Suggest scientific traits and mechanisms.
+Relevant traits from database:
+{traits}
 
-Rules:
-- Only JSON
-- No explanation
+Task:
+- Select ONLY traits relevant to the environment
+- If climate is cold → choose cold tolerance traits
+- Remove irrelevant traits
 
 Return JSON:
 {{
@@ -94,7 +97,7 @@ Return JSON:
         return json.loads(extract_json(output))
     except:
         return {
-            "traits": [],
+            "traits": traits,
             "mechanisms": []
         }
 
@@ -102,38 +105,31 @@ Return JSON:
 # ----------------------------------------
 # AGENT 3: GENERATOR
 # ----------------------------------------
+
+
 def generator_agent(plan, science):
+    traits = science.get("traits", [])
+
+    confidence = compute_confidence(traits)
+
     prompt = f"""
-You are a STRICT JSON generator.
-
-Your job:
-Combine plan + science into valid structured JSON.
-
-DO NOT FAIL.
-
-Rules:
-- ONLY JSON (no explanation)
-- ALL fields must exist
-- temperature must be number
-- traits must be list
-- scientific_basis must be list
-- confidence must be between 0 and 1
+Generate final JSON.
 
 Plan:
 {plan}
 
-Science:
-{science}
+Traits:
+{traits}
 
-Return EXACTLY this schema:
+Return JSON:
 {{
   "crop": "",
   "location": "",
-  "temperature": 0,
+  "temperature": 25,
   "stress": [],
-  "traits": [],
+  "traits": {traits},
   "scientific_basis": [],
-  "confidence": 0.8
+  "confidence": {confidence}
 }}
 """
     output = run_llama(prompt)
@@ -144,11 +140,11 @@ Return EXACTLY this schema:
         return {
             "crop": "unknown",
             "location": "unknown",
-            "temperature": 0,
+            "temperature": 25,
             "stress": [],
-            "traits": [],
+            "traits": traits,
             "scientific_basis": [],
-            "confidence": 0.0
+            "confidence": confidence
         }
 
 

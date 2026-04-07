@@ -49,7 +49,7 @@ def load_data():
 # --------------------------
 # SEARCH FUNCTION
 # --------------------------
-def search_traits(query: str, top_k=3):
+def search_traits(query: str, top_k=5):
     query_embedding = model.encode(query).tolist()
 
     results = collection.query(
@@ -59,8 +59,8 @@ def search_traits(query: str, top_k=3):
 
     traits = results["documents"][0]
 
-    # Convert to your old format (important)
+    # Add simple ranking score (placeholder)
     return [
-        {"trait": trait, "score": 1.0}
-        for trait in traits
+        {"trait": trait, "score": 1.0 - (i * 0.1)}
+        for i, trait in enumerate(traits)
     ]
