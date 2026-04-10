@@ -1,8 +1,11 @@
+from vector_search import load_data
 import streamlit as st
 import json
 
 from fast_pipeline import fast_pipeline
 from workflow import run_pipeline
+
+load_data()
 
 # -----------------------
 # PAGE CONFIG
