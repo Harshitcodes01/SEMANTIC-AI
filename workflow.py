@@ -162,12 +162,11 @@ def build_graph():
 
     return graph.compile()
 
-def run_pipeline(user_input):
-    graph = build_graph()
 
+def run_pipeline(user_input: str):
+    graph = build_graph()
     result = graph.invoke({
         "input": user_input,
         "retries": 0
     })
-
     return result["final"]
