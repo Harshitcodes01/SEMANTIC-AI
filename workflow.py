@@ -22,7 +22,7 @@ class State(TypedDict):
 
 
 # ---------------------------
-# RETRY LOGIC (IMPORTANT)
+# RETRY LOGIC FOR PARSING
 # ---------------------------
 def parse_with_retry(user_input, max_attempts=3):
     for attempt in range(max_attempts):
@@ -91,7 +91,10 @@ def generate_node(state: State):
 def validate_node(state: State):
     print("Step 5: Validating output...")
 
-    result, ok = validate_spec(state["final"])
+    validated, ok = validate_spec(state["final"])
+
+    
+    state["final"] = validated
 
     state["valid"] = ok
 
