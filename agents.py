@@ -11,7 +11,7 @@ OLLAMA_PATH = r"C:\Users\Harshit\AppData\Local\Programs\Ollama\ollama.exe"
 # ----------------------------------------
 # BASE FUNCTIONS
 # ----------------------------------------
-def run_llama(prompt):
+'''def run_llama(prompt):
     result = subprocess.run(
     [OLLAMA_PATH, "run", "llama3"],
     input=prompt,
@@ -21,7 +21,24 @@ def run_llama(prompt):
     errors="ignore"        
 )
     
-    return result.stdout
+    return result.stdout'''
+def run_llama(prompt):
+    try:
+        result = subprocess.run(
+            [OLLAMA_PATH, "run", "llama3"],
+            input=prompt,
+            text=True,
+            capture_output=True,
+            encoding="utf-8",
+            errors="ignore",
+            timeout=20   # ✅ ADD THIS
+        )
+
+        return result.stdout
+
+    except Exception as e:
+        print("LLM Error:", e)
+        return "{}"   # ✅ fallback JSON
 
 
 def extract_json(text):

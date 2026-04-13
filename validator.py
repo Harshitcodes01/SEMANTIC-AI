@@ -2,18 +2,11 @@ from models import Spec
 
 
 def validate_spec(data):
-    required_keys = [
-        "crop",
-        "location",
-        "temperature",
-        "stress",
-        "traits",
-        "scientific_basis",
-        "confidence"
-    ]
+    try:
+        validated = Spec(**data)   # ✅ strict validation
 
-    for key in required_keys:
-        if key not in data:
-            return data, False
+        return validated.model_dump(), True
 
-    return data, True
+    except Exception as e:
+        print("Validation error:", e)
+        return data, False

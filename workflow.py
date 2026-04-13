@@ -6,6 +6,7 @@ from vector_search import search_traits
 from research import fetch_research_insights
 from spec_generator import generate_final_spec
 from validator import validate_spec
+#from research import fetch_research_insights
 
 
 # ---------------------------
@@ -57,10 +58,17 @@ def search_node(state: State):
     return state
 
 
-def research_node(state: State):
+#from .research import fetch_research
+
+def research_node(state):
     print("Step 3: Fetching research...")
 
-    state["insights"] = fetch_research_insights(state["input"])
+    traits = [t["trait"] for t in state["traits"]]
+
+    insights = fetch_research_insights(traits)
+
+    state["research"] = insights
+
     return state
 
 
@@ -113,7 +121,7 @@ def validate_node(state: State):
                 "temperature": 0,
                 "stress": [],
                 "traits": [],
-                "scientific_basis": [],
+                "scientific_basis": state.get("research", []),
                 "confidence": 0.0
             }
 

@@ -1,0 +1,50 @@
+[
+  {
+    "trait": "deep root system",
+    "stress": ["drought"],
+    "mechanism": "access deeper water from soil",
+    "crop_relevance": ["wheat", "rice", "maize"]
+  },
+  {
+    "trait": "heat shock protein expression",
+    "stress": ["heat"],
+    "mechanism": "protects proteins under high temperature",
+    "crop_relevance": ["rice", "wheat"]
+  },
+  {
+    "trait": "waxy leaf coating",
+    "stress": ["drought"],
+    "mechanism": "reduces water loss",
+    "crop_relevance": ["wheat"]
+  },
+  {
+    "trait": "salt tolerance",
+    "stress": ["salinity"],
+    "mechanism": "maintains ion balance",
+    "crop_relevance": ["rice"]
+  },
+  {
+    "trait": "cold tolerance proteins",
+    "stress": ["cold"],
+    "mechanism": "prevents cellular damage at low temperature",
+    "crop_relevance": ["wheat"]
+  },
+  {
+    "trait": "efficient photosynthesis",
+    "stress": ["heat"],
+    "mechanism": "maintains energy production under stress",
+    "crop_relevance": ["rice", "wheat"]
+  },
+  {
+    "trait": "osmotic adjustment",
+    "stress": ["drought", "salinity"],
+    "mechanism": "maintains water balance in cells",
+    "crop_relevance": ["rice"]
+  },
+  {
+    "trait": "early maturation",
+    "stress": ["drought"],
+    "mechanism": "completes lifecycle before stress intensifies",
+    "crop_relevance": ["wheat", "millet"]
+  }
+]
