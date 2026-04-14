@@ -60,14 +60,18 @@ def search_node(state: State):
 
 #from .research import fetch_research
 
-def research_node(state):
+def research_node(state: State):
     print("Step 3: Fetching research...")
 
-    traits = [t["trait"] for t in state["traits"]]
+    traits = [t["trait"] for t in state.get("traits", [])]
+
+    if not traits:
+        state["insights"] = []   # ✅ fallback
+        return state
 
     insights = fetch_research_insights(traits)
 
-    state["research"] = insights
+    state["insights"] = insights
 
     return state
 
@@ -91,7 +95,7 @@ def generate_node(state: State):
     state["final"] = generate_final_spec(
         state["parsed"],
         state["traits"],
-        state["insights"]
+        state.get("insights", [])
     )
     return state
 
