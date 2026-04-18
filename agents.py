@@ -119,51 +119,6 @@ Return JSON:
         }
 
 
-# ----------------------------------------
-# AGENT 3: GENERATOR
-# ----------------------------------------
-
-
-def generator_agent(plan, science):
-    traits = science.get("traits", [])
-
-    confidence = compute_confidence(traits)
-
-    prompt = f"""
-Generate final JSON.
-
-Plan:
-{plan}
-
-Traits:
-{traits}
-
-Return JSON:
-{{
-  "crop": "",
-  "location": "",
-  "temperature": 25,
-  "stress": [],
-  "traits": {traits},
-  "scientific_basis": [],
-  "confidence": {confidence}
-}}
-"""
-    output = run_llama(prompt)
-
-    try:
-        return json.loads(extract_json(output))
-    except:
-        return {
-            "crop": "unknown",
-            "location": "unknown",
-            "temperature": 25,
-            "stress": [],
-            "traits": traits,
-            "scientific_basis": [],
-            "confidence": confidence
-        }
-
 
 # ----------------------------------------
 # AGENT 4: VALIDATOR (SMART FIXER)

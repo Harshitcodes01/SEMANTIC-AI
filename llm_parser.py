@@ -1,6 +1,11 @@
 import json
 from llm import run_llama  
 import re
+from functools import lru_cache
+
+@lru_cache(maxsize=100)
+def cached_call(prompt):
+    return run_llama(prompt)
 
 def extract_temperature(text):
     match = re.search(r'(\d+)\s*(°C|C|degree|degrees)?', text, re.IGNORECASE)
@@ -79,8 +84,9 @@ Input:
 {user_input}
 """
 
-    raw = run_llama(prompt)
+    #raw = run_llama(prompt)
 
+    raw = cached_call(prompt)
     try:
         llm_data = json.loads(clean_json(raw))
     except:
