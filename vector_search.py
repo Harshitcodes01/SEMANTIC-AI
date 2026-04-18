@@ -108,11 +108,6 @@ def load_data():
 # SEARCH FUNCTION
 # --------------------------
 def search_traits(query: str, crop=None, stress=None, top_k=5):
-    global collection
-
-    if collection is None:
-        load_data()
-
     query_embedding = model.encode(query).tolist()
 
     results = collection.query(
@@ -128,26 +123,34 @@ def search_traits(query: str, crop=None, stress=None, top_k=5):
     for i in range(len(traits)):
         meta = metadatas[i]
 
-        # ✅ STRICT MATCHING
-        stress_match = False
-        crop_match = False
+        score = 0
 
+        # match stress
         if stress:
-            stress_match = any(s in meta.get("stress", []) for s in stress)
+            for s in stress:
+                if s in meta.get("stress", []):
+                    score += 2   # higher weight
 
-        if crop:
-            crop_match = crop in meta.get("crop", [])
+        # match crop
+        if crop and crop.lower() in [c.lower() for c in meta.get("crop", [])]:
+            score += 1
 
-        # ✅ REQUIRE BOTH (IMPORTANT)
-        if stress_match or crop_match:
+        if score > 0:
             final_results.append({
                 "trait": traits[i],
                 "mechanism": meta.get("mechanism", ""),
-                "score": 1.0
+                "score": score
             })
 
-    # ❌ REMOVE BAD FALLBACK
-    # (Do NOT return random traits)
+    # fallback
+    if not final_results:
+        final_results = [
+            {"trait": t, "mechanism": "", "score": 0.5}
+            for t in traits
+        ]
+
+    # sort by score
+    final_results.sort(key=lambda x: x["score"], reverse=True)
 
     return final_results
 
