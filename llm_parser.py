@@ -51,8 +51,69 @@ def clean_json(text):
     end = text.rfind("}") + 1
     return text[start:end]
 
-
 def parse_prompt(user_input: str):
+    prompt = f"""
+You are a universal AI parser.
+
+Your task:
+Convert ANY user input into structured JSON.
+
+Rules:
+- Only JSON
+- No explanation
+- Extract meaning clearly
+
+Return format:
+{{
+  "intent": "",
+  "entities": {{}},
+  "constraints": {{}},
+  "context": "",
+  "goal": ""
+}}
+
+Examples:
+
+Input: "rice in hot climate"
+Output:
+{{
+  "intent": "optimize crop growth",
+  "entities": {{"crop": "rice"}},
+  "constraints": {{"climate": "hot"}},
+  "context": "agriculture",
+  "goal": "improve yield"
+}}
+
+Input: "buy laptop under 50000 for gaming"
+Output:
+{{
+  "intent": "buy",
+  "entities": {{"product": "laptop"}},
+  "constraints": {{"budget": 50000, "use": "gaming"}},
+  "context": "shopping",
+  "goal": "find suitable laptop"
+}}
+
+Input:
+{user_input}
+"""
+
+    #raw = call_ollama(prompt)
+    raw = cached_call(prompt)
+
+    try:
+        return json.loads(clean_json(raw))
+    except:
+        return {
+            "intent": "unknown",
+            "entities": {},
+            "constraints": {},
+            "context": "",
+            "goal": ""
+        }
+
+
+'''def parse_prompt(user_input: str):
 
     # ------------------------
     # RULE-BASED EXTRACTION
@@ -101,7 +162,7 @@ Input:
         "temperature": temperature if temperature else 25,
         "stress": stress,
         "traits_required": llm_data.get("traits_required", [])
-    }
+    }'''
 
 
 def clean_json(text):
