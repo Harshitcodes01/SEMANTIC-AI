@@ -1,18 +1,13 @@
 from workflow import build_graph
 from vector_search import load_data
+from llm_parser import parse_prompt
 
-# ---------------------------
-# INIT SYSTEM (RUN ONCE)
-# ---------------------------
 print("Initializing system...")
 
-load_data()          # ✅ Load vector DB once
-graph = build_graph()  # ✅ Build graph once
+load_data()
+graph = build_graph()
 
 
-# ---------------------------
-# PIPELINE FUNCTION
-# ---------------------------
 def run_pipeline(user_input):
     result = graph.invoke({
         "input": user_input,
@@ -21,14 +16,19 @@ def run_pipeline(user_input):
     return result["final"]
 
 
-# ---------------------------
-# CLI LOOP
-# ---------------------------
 if __name__ == "__main__":
     while True:
         user_input = input("\nEnter prompt: ")
 
-        result = run_pipeline(user_input)
+        parsed = parse_prompt(user_input)
 
-        print("\nFINAL OUTPUT:\n")
+        if parsed.get("context") == "agriculture":
+            result = run_pipeline(user_input)
+        else:
+            result = {
+                "mode": "universal_parser",
+                "parsed_output": parsed
+            }
+
+        print("\nOUTPUT:\n")
         print(result)
