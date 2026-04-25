@@ -80,7 +80,7 @@ def smart_fallback_parser(user_input: str):
     else:
         context = "general"
 
-    # -------- goal --------
+    # goal
     if intent == "learn":
         goal = "understand concepts"
     elif intent == "buy":
