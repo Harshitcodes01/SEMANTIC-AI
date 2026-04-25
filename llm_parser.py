@@ -1,69 +1,114 @@
 import json
-from llm import run_llama  
 import re
 from functools import lru_cache
+from llm import run_llama
 
+
+# ------------------------
+# LLM CALL (CACHED)
+# ------------------------
 @lru_cache(maxsize=100)
 def cached_call(prompt):
     return run_llama(prompt)
 
-def extract_temperature(text):
-    match = re.search(r'(\d+)\s*(°C|C|degree|degrees)?', text, re.IGNORECASE)
-    if match:
-        return float(match.group(1))
-    return None
 
-
-def detect_stress(text):
-    text = text.lower()
-    stress = []
-
-    if "heat" in text or "hot" in text:
-        stress.append("heat")
-
-    if "cold" in text or "low temperature" in text:
-        stress.append("cold")
-
-    if "drought" in text or "dry" in text or "desert" in text:
-        stress.append("drought")
-
-    if "salinity" in text or "salt" in text:
-        stress.append("salinity")
-
-    return stress
-
-
-def detect_crop(text):
-    text = text.lower()
-
-    if "wheat" in text:
-        return "wheat"
-    if "rice" in text:
-        return "rice"
-    if "millet" in text:
-        return "millet"
-
-    return "unknown"
-
-
+# ------------------------
+# SAFE JSON EXTRACTION
+# ------------------------
 def clean_json(text):
-    start = text.find("{")
-    end = text.rfind("}") + 1
-    return text[start:end]
+    if not text:
+        return ""
 
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if match:
+        return match.group(0)
+
+    return ""
+
+
+# ------------------------
+# SMART FALLBACK PARSER
+# ------------------------
+def smart_fallback_parser(user_input: str):
+    text = user_input.lower()
+
+    # -------- intent --------
+    if any(w in text for w in ["buy", "purchase"]):
+        intent = "buy"
+    elif any(w in text for w in ["learn", "study", "notes"]):
+        intent = "learn"
+    elif any(w in text for w in ["build", "make", "create"]):
+        intent = "create"
+    elif any(w in text for w in ["find", "search", "best"]):
+        intent = "find"
+    else:
+        intent = "general"
+
+    # -------- entities --------
+    entities = {}
+
+    # languages
+    for lang in ["java", "python", "c++", "javascript"]:
+        if lang in text:
+            entities["language"] = lang
+
+    # topics
+    for topic in ["oops", "ai", "machine learning", "data structures"]:
+        if topic in text:
+            entities["topic"] = topic
+
+    # objects
+    if "laptop" in text:
+        entities["product"] = "laptop"
+    if "engine" in text:
+        entities["object"] = "engine"
+
+    # -------- constraints --------
+    constraints = {}
+
+    budget_match = re.search(r"\d+", text)
+    if budget_match:
+        constraints["budget"] = int(budget_match.group())
+
+    # -------- context --------
+    if "java" in text or "programming" in text:
+        context = "education"
+    elif "buy" in text:
+        context = "shopping"
+    elif "engine" in text:
+        context = "engineering"
+    else:
+        context = "general"
+
+    # -------- goal --------
+    if intent == "learn":
+        goal = "understand concepts"
+    elif intent == "buy":
+        goal = "find best option"
+    elif intent == "create":
+        goal = "build solution"
+    else:
+        goal = "unknown"
+
+    return {
+        "intent": intent,
+        "entities": entities,
+        "constraints": constraints,
+        "context": context,
+        "goal": goal
+    }
+
+
+# ------------------------
+# MAIN PARSER
+# ------------------------
 def parse_prompt(user_input: str):
     prompt = f"""
 You are a universal AI parser.
 
-Your task:
-Convert ANY user input into structured JSON.
+Return ONLY valid JSON.
 
-Rules:
-- Only JSON
-- No explanation
-- Extract meaning clearly
-
-Return format:
+Format:
 {{
   "intent": "",
   "entities": {{}},
@@ -72,133 +117,27 @@ Return format:
   "goal": ""
 }}
 
-Examples:
-
-Input: "rice in hot climate"
-Output:
-{{
-  "intent": "optimize crop growth",
-  "entities": {{"crop": "rice"}},
-  "constraints": {{"climate": "hot"}},
-  "context": "agriculture",
-  "goal": "improve yield"
-}}
-
-Input: "buy laptop under 50000 for gaming"
-Output:
-{{
-  "intent": "buy",
-  "entities": {{"product": "laptop"}},
-  "constraints": {{"budget": 50000, "use": "gaming"}},
-  "context": "shopping",
-  "goal": "find suitable laptop"
-}}
-
 Input:
 {user_input}
 """
-
-    #raw = call_ollama(prompt)
-    raw = cached_call(prompt)
-
-    try:
-        return json.loads(clean_json(raw))
-    except:
-        return {
-            "intent": "unknown",
-            "entities": {},
-            "constraints": {},
-            "context": "",
-            "goal": ""
-        }
-
-
-'''def parse_prompt(user_input: str):
-
-    # ------------------------
-    # RULE-BASED EXTRACTION
-    # ------------------------
-    temperature = extract_temperature(user_input)
-    stress = detect_stress(user_input)
-    crop = detect_crop(user_input)
-
-    # ------------------------
-    # LLM ONLY FOR MISSING
-    # ------------------------
-    prompt = f"""
-Extract missing structured fields.
-
-Already known:
-crop: {crop}
-temperature: {temperature}
-stress: {stress}
-
-Fill missing fields only.
-
-Return JSON:
-{{
-  "location": "",
-  "traits_required": []
-}}
-
-Input:
-{user_input}
-"""
-
-    #raw = run_llama(prompt)
 
     raw = cached_call(prompt)
-    try:
-        llm_data = json.loads(clean_json(raw))
-    except:
-        llm_data = {}
+    cleaned = clean_json(raw)
 
-    # ------------------------
-    # MERGE RESULTS
-    # ------------------------
-    return {
-        "crop": crop,
-        "location": llm_data.get("location", "unknown"),
-        "temperature": temperature if temperature else 25,
-        "stress": stress,
-        "traits_required": llm_data.get("traits_required", [])
-    }'''
+    print("RAW:", raw)
+    print("CLEANED:", cleaned)
 
+    # -------- try LLM --------
+    if cleaned and cleaned != "{}":
+        try:
+            parsed = json.loads(cleaned)
 
-def clean_json(text):
-    start = text.find("{")
-    end = text.rfind("}") + 1
-    return text[start:end]
+            if isinstance(parsed, dict) and parsed.get("intent"):
+                return parsed
 
+        except:
+            pass
 
-def parse_prompt(user_input: str):
-    prompt = f"""
-You are a strict scientific system.
-
-Convert input into VALID JSON ONLY.
-
-Rules:
-- No explanation
-- No extra text
-- Only JSON
-- Follow schema strictly
-
-Schema:
-{{
-  "crop": "",
-  "location": "",
-  "temperature": number,
-  "stress": [],
-  "traits_required": []
-}}
-
-Input:
-{user_input}
-"""
-
-    raw = run_llama(prompt)
-
-    try:
-        return json.loads(clean_json(raw))
-    except:
-        return {"error": "invalid_json", "raw": raw}
+    # -------- fallback --------
+    print("⚠️ Using smart fallback parser")
+    return smart_fallback_parser(user_input)
